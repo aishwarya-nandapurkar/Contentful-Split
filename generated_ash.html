@@ -1,0 +1,129 @@
+<html>
+<head>
+	<title>My Screen</title>
+	<style>
+		.container {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100vh;
+            background-color: #af4c4cbc;
+		}
+		img {
+			max-width: 100%;
+			height: auto;
+			margin-bottom: 20px;
+		}
+		button {
+			padding: 10px 20px;
+			background-color: #4CAF50;
+			color: white;
+			border: none;
+			border-radius: 5px;
+			font-size: 16px;
+			cursor: pointer;
+		}
+		select {
+			padding: 10px;
+			font-size: 16px;
+			border-radius: 5px;
+            margin-bottom: 10px;
+		}
+	</style>
+
+<script src="https://cdn.jsdelivr.net/npm/contentful@latest/dist/contentful.browser.min.js"></script>
+<script src="https://cdn.split.io/sdk/split-10.22.4.min.js"></script>
+<script>
+var movieSelected='NA';
+const client = contentful.createClient({
+  space: '9wyemvp83vwc',
+  environment: 'master', // defaults to 'master' if not set
+  accessToken: '<<ContentfulAPIToken>>'
+});
+
+  var factory = splitio({
+    core: {
+      authorizationKey: '<<Split API Key>>',
+    key: 'ash123' // unique identifier for your user
+  },
+  schedule: {
+    eventsPushRate: 5
+  }
+});
+
+  var splitClient = factory.client();
+
+  splitClient.on(splitClient.Event.SDK_READY, function() {
+    console.log('SDK_READY');
+    draw();
+  });
+
+  splitClient.on(splitClient.Event.SDK_UPDATE, function() {
+    console.log('SDK_UPDATE');
+    draw();
+  });
+
+  function draw() {
+    const treatment = splitClient.getTreatment('dynamic_boxes');
+
+    if (treatment === 'on') {
+      client.getEntry('7lryvZk3EPXH5FAk4YevR0').then(function (entry) {
+        console.log(entry.fields.cast);
+        console.log(entry.fields.posterurlink);
+        var poster =entry.fields.posterurlink;
+        populateMovies(entry.fields.cast, poster);
+      });
+    }   else   if (treatment === 'off') {
+      client.getEntry('9Fvcvhs1pf1yftUOCQEH3').then(function (entry) {
+        console.log(entry.fields.cast);
+        console.log(entry.fields.posterurlink);
+        var poster =entry.fields.posterurlink;
+        populateMovies(entry.fields.cast, poster);
+      });
+    }   else {
+        populateMovies(['Rowling', 'Bellairs', 'Eddings']); 
+    }
+  }
+
+  function populateMovies(list, poster) {
+    let options = '<optgroup>';
+    for(const option of list) {
+      options += '<option>' + option + '</option>';
+    }
+    options += '</optgroup>';
+    document.getElementById('movies').innerHTML = options;
+    document.getElementById('imageMovie').src= poster;
+  }
+
+  function movieSelectBtnClicked() {
+    alert("Enjoy watching "+movieSelected+"!");
+    const properties = {
+     movie: movieSelected
+   };
+   const result = splitClient.track('user', 'movie_selected',0, properties);
+   console.log(result);
+ }
+ function populateDropdown(){
+    document.getElementById("movies").addEventListener("change", function() {
+			var selectedOption = this.value;
+            console.log('User selected movie :'+selectedOption);
+            movieSelected=selectedOption;
+			//alert("Selected option: " + selectedOption);
+		});
+ }
+ 
+</script>
+</head>
+<body>
+	<div class="container">
+        <h1>Now watch your favorite movies!</h1>
+		<img id="imageMovie" alt="My Image">
+		<h3>Select the movie of your choice</h3>
+		<select id="movies" oninput="populateDropdown()">	
+		</select>
+		<button  id="my-button" onclick="movieSelectBtnClicked()">Click Me</button>
+	</div>
+
+</body>
+</html>
